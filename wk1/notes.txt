@@ -1,0 +1,15 @@
+Mike Bailey, professor
+mjb@cs.oregonstate.edu
+541-737-2542
+
+gcc / g++ v 8.20 is ideal
+/usr/local/common/gcc-8.2.0
+    --bind in flip?--
+
+Project Notes:
+
+OpenMP timing functions:
+    double prec = omp_get_wtick(); --> precision of clock
+    double time0 = omp_get_wtime(); --> time in seconds (wall clock time)
+
+

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Runs CS475 Project #0 - Simple OpenMP Experiment
+# Input: 3 args in order:
+#   -number of threads to run in parallel and compare to single-threaded performance
+#   -size of float arrays to be pairwise multiplied
+#   -number of iterations of program
+
+numThreads=$1
+arrSize=$2
+numTries=$3
+
+if [ "$#" -lt 3 ]; then
+    printf "runProj0 requires 3 arguments\n\t%s\n\t%s\n\t%s\n"\
+        "-number of threads to check against single-threaded performance"\
+        "-tarray size for pairwise float array multiplication"\
+        "-number of runs to find peak performance in MegaMults / second"
+    exit 0
+elif [ "$1" -gt "$2" ]; then
+    printf "Can't use more threads than we have array elements!\n"
+elif [ "$2" -ge 1000000000 ]; then
+    printf "Array size must be less than a billion - bad stuff happens otherwise!\n"
+    exit 0
+elif [ "$3" -ge 1000000 ]; then
+    printf "$3 tries is going to take forever!\n"
+fi
+
+for t in 1 $numThreads; do
+    echo NUMTHREADS=$t
+    echo ARRAYSIZE=$arrSize
+    echo NUMTRIES=$numTries
+    echo
+    g++ -DNUMTHREADS=$t -DARRAYSIZE=$arrSize -DNUMTRIES=$numTries\
+        proj0.cpp -o proj0 -lm -fopenmp
+    ./proj0
+    echo
+done
+
