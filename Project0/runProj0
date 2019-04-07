@@ -1,38 +1,32 @@
 #!/bin/bash
 
-# Runs CS475 Project #0 - Simple OpenMP Experiment
-# Input: 3 args in order:
-#   -number of threads to run in parallel and compare to single-threaded performance
-#   -size of float arrays to be pairwise multiplied
-#   -number of iterations of program
+# runProj0 runs the Project 0 - Simple OpenMP experiment program with
+# numThreads = 1 and 4. It uses the output (performance and running times)
+# to calculate the speedup and parallel fraction from 1 thread to 4.
 
-numThreads=$1
-arrSize=$2
-numTries=$3
+trap "rm -f *$$*; echo; echo 'CTRL-C received, exiting'; exit 1" INT HUP TERM
 
-if [ "$#" -lt 3 ]; then
-    printf "runProj0 requires 3 arguments\n\t%s\n\t%s\n\t%s\n"\
-        "-number of threads to check against single-threaded performance"\
-        "-tarray size for pairwise float array multiplication"\
-        "-number of runs to find peak performance in MegaMults / second"
-    exit 0
-elif [ "$1" -gt "$2" ]; then
-    printf "Can't use more threads than we have array elements!\n"
-elif [ "$2" -ge 1000000000 ]; then
-    printf "Array size must be less than a billion - bad stuff happens otherwise!\n"
-    exit 0
-elif [ "$3" -ge 1000000 ]; then
-    printf "$3 tries is going to take forever!\n"
-fi
+tempOneLine="tempOneLine$$"
+echo "Running experiment with 1 thread"
+g++ -DNUMTHREADS=1 proj0.cpp -o proj0 -lm -fopenmp
+./proj0 > $tempOneLine
+perf1=$(cut -f 1 $tempOneLine)
+time1=$(cut -f 2 $tempOneLine)
+echo -e "MegaMults / sec\t$perf1\tRunning time\t$time1\n"
 
-for t in 1 $numThreads; do
-    echo NUMTHREADS=$t
-    echo ARRAYSIZE=$arrSize
-    echo NUMTRIES=$numTries
-    echo
-    g++ -DNUMTHREADS=$t -DARRAYSIZE=$arrSize -DNUMTRIES=$numTries\
-        proj0.cpp -o proj0 -lm -fopenmp
-    ./proj0
-    echo
-done
+tempFourLine="tempFourLine$$"
+echo "Running experiment with 4 threads"
+g++ -DNUMTHREADS=4 proj0.cpp -o proj0 -lm -fopenmp
+./proj0 > $tempFourLine
+perf4=$(cut -f 1 $tempFourLine)
+time4=$(cut -f 2 $tempFourLine)
+echo -e "MegaMults / sec\t$perf4\tRunning time\t$time4\n"
 
+# Calculate speedup
+speedup=$(echo -e "$time1 / $time4" | bc -l)
+printf "Speedup: %0.4lf\n\n" $speedup
+
+ParFrac=$(echo "(4. / 3.) * (1. - (1. / $speedup) )" | bc -l)
+printf "Parallel fraction: %0.4lf\n" $ParFrac
+
+rm -f *$$*
