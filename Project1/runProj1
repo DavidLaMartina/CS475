@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# maxThreads: max number of threads to be tested
+# threadInc:  increment for NUMT (number of threads)
+# trials:     numbers of trials to be tested for each number of threads
+
+if (($# < 3)); then
+    printf "\trunProj1 requires at least 3 arguments:
+\tusage: runProj1 <maxThreads> <threadIncrement> [trial numbers]\n"
+    exit 1
+fi
+
+maxThreads=$1
+threadInc=$2
+trials=${@:3}
+
+# number of threads
+COUNTER=1
+while [ $COUNTER -le $maxThreads ]; do
+    if (($COUNTER == 1)) || (($COUNTER % $threadInc == 0)); then
+        for num in $trials; do
+            g++ -DNUMT=$COUNTER -DNUMTRIALS=$num -o proj1 proj1.cpp -lm -fopenmp
+            ./proj1
+        done
+    fi
+    COUNTER=$(($COUNTER + 1))
+done
+exit 0
