@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
             // Else we've hit the circle in some way - determine how
             d = sqrt(d);
             float t1 = (-b + d) / (2. * a);
-            float t2 = (-b + d) / (2. * a);
+            float t2 = (-b - d) / (2. * a);
             float tmin = t1 < t2 ? t1 : t2;     // Only care about first intersection
 
             // If tmin < 0, circle engulfs laser pointer

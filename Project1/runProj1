@@ -4,9 +4,20 @@
 # threadInc:  increment for NUMT (number of threads)
 # trials:     numbers of trials to be tested for each number of threads
 
+trap "rm -f *$$*; echo; echo 'CTRL+C received, exiting'; exit 1" INT HUP TERM
+
+# Check number of args
 if (($# < 3)); then
     printf "\trunProj1 requires at least 3 arguments:
 \tusage: runProj1 <maxThreads> <threadIncrement> [trial numbers]\n"
+    exit 1
+# Ensure reasonable thread count
+elif (($1 > 1000)); then
+    printf "\tNUMT (number of threads) should be 1,000 or smaller\n"
+    exit 1
+# Ensure threadInc <= maxThreads
+elif (($2 > $1)); then
+    printf "\tThe thread increment should be less than or equal to max threads\n"
     exit 1
 fi
 
@@ -14,15 +25,29 @@ maxThreads=$1
 threadInc=$2
 trials=${@:3}
 
+# Set up temp row for piping spreadsheet-ready output into file
+tempLine="tempLine$$"
+
+# echo -e "Threads\tTrials\tProbability\tPerformance"
+echo -n -e "\t"
+for num in $trials; do
+    echo -e -n "$num\t"
+done
+echo
+
 # number of threads
 COUNTER=1
 while [ $COUNTER -le $maxThreads ]; do
     if (($COUNTER == 1)) || (($COUNTER % $threadInc == 0)); then
+        echo -n -e "$COUNTER\t"
         for num in $trials; do
             g++ -DNUMT=$COUNTER -DNUMTRIALS=$num -o proj1 proj1.cpp -lm -fopenmp
-            ./proj1
+            ./proj1 > $tempLine
+            echo -n -e "$(cut -f 4 $tempLine)\t"
         done
+        echo
     fi
     COUNTER=$(($COUNTER + 1))
 done
+rm -f $tempLine
 exit 0
