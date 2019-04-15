@@ -26,7 +26,10 @@ threadInc=$2
 trials=${@:3}
 
 # Set up temp row for piping spreadsheet-ready output into file
-tempLine="tempLine$$"
+tempLine="tempLine$$"           # For standard output
+touch probLog                   # Recording all results - So we don't have to sloppily
+                                #   re-run program once we know which prob stat we want
+echo -e "Cores\tNumTries\tProb\tPerformance" > probLog
 
 # echo -e "Threads\tTrials\tProbability\tPerformance"
 echo -n -e "\t"
@@ -43,6 +46,7 @@ while [ $COUNTER -le $maxThreads ]; do
         for num in $trials; do
             g++ -DNUMT=$COUNTER -DNUMTRIALS=$num -o proj1 proj1.cpp -lm -fopenmp
             ./proj1 > $tempLine
+            cat $tempLine >> probLog
             echo -n -e "$(cut -f 4 $tempLine)\t"
         done
         echo
