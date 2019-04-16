@@ -1,0 +1,38 @@
+#!/bin/bash
+
+trap "rm -f *$$* proj2; echo; echo 'Exiting'; exit 1" INT HUP TERM
+
+# Check number of args
+if (($# < 3)); then
+    printf "\trunProj2 requires at least 3 arguments:
+\tusage: runProj2 <maxThreads> <threadIncrement> [node counts]\n"
+    exit 1
+# Ensure reasonable thread count
+elif (($1 > 64)); then
+    printf "\tNUMT (number of threads) should be 64 or smaller\n"
+    exit 1
+# Ensure threadInc <= maxThreads
+elif (($2 > $1)); then
+    printf "\tThe thread increment should be less than or equal to max threads\n"
+    exit 1
+fi
+
+maxThreads=$1
+threadInc=$2
+numsNodes=${@:3}
+
+# PLACEHOLD - BETTER OUTPUT
+
+COUNTER=1
+while [ $COUNTER -le $maxThreads ]; do
+    if (($COUNTER == 1)) || (($COUNTER % threadInc == 0)); then
+#        echo -n -e "$COUNTER\t"
+        for num in $numsNodes; do
+            g++ -DNUMT=$COUNTER -DNUMNODES=$num -o proj2 proj2.cpp -lm -fopenmp
+            ./proj2
+        done
+    fi
+    COUNTER=$(($COUNTER + 1))
+done
+rm -rf *$$* proj2
+exit 0
