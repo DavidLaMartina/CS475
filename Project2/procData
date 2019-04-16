@@ -8,9 +8,30 @@ write.table(data, "data.txt", sep="\t", row.names=FALSE)
 data$Volume <- NULL
 
 # Organize data by both threads and nodes & output for PDF incorporation
-dataByThread <- reshape(data, idvar = "Threads", timevar = "Nodes", direction = "wide")
-dataByNodes  <- reshape(data, idvar = "Nodes", timevar = "Threads", direction = "wide")
+dataByThreads <- reshape(data, idvar = "Threads", timevar = "Nodes", direction = "wide")
+dataByNodes   <- reshape(data, idvar = "Nodes", timevar = "Threads", direction = "wide")
 
-write.table(dataByThread, "dataByThreads.txt", sep="\t", row.names=FALSE)
+write.table(dataByThreads, "dataByThreads.txt", sep="\t", row.names=FALSE)
 write.table(dataByNodes, "dataByNodes.txt", sep="\t", row.names=FALSE)
 
+# Plot
+library(ggplot2)
+library(reshape2)
+
+# Melt data back into long format for ggplot
+threads_long <- melt(dataByThreads,  id="Threads")
+nodes_long   <- melt(dataByNodes, id="Nodes")
+
+ggplot(data=threads_long,
+       aes(x=Threads, y=value, color=variable)) +
+       geom_point() +
+       geom_line() +
+       labs(y='MegaHeights per Second', x='Threads', color='Nodes') +
+       ggtitle('Performance vs. Threads')
+
+ggplot(data=nodes_long,
+       aes(x=Nodes, y=value, color=variable)) +
+       geom_point() +
+       geom_line() +
+       labs(y='MegaHeights per Second', x='Nodes', color='Threads') +
+       ggtitle('Performance vs. Threads')
