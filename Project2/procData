@@ -1,0 +1,16 @@
+#!/usr/bin/Rscript
+
+# Read from stdin (pipe from runProj2 output) and write to txt before mod
+data <- read.table('stdin', header=TRUE)
+write.table(data, "data.txt", sep="\t", row.names=FALSE)
+
+# Get rid of volume field to analyze performance vs. threads and nodes
+data$Volume <- NULL
+
+# Organize data by both threads and nodes & output for PDF incorporation
+dataByThread <- reshape(data, idvar = "Threads", timevar = "Nodes", direction = "wide")
+dataByNodes  <- reshape(data, idvar = "Nodes", timevar = "Threads", direction = "wide")
+
+write.table(dataByThread, "dataByThreads.txt", sep="\t", row.names=FALSE)
+write.table(dataByNodes, "dataByNodes.txt", sep="\t", row.names=FALSE)
+

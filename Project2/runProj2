@@ -23,6 +23,8 @@ numsNodes=${@:3}
 
 # PLACEHOLD - BETTER OUTPUT
 
+echo -e "Threads\tNodes\tVolume\tPerformance"
+
 COUNTER=1
 while [ $COUNTER -le $maxThreads ]; do
     if (($COUNTER == 1)) || (($COUNTER % threadInc == 0)); then
