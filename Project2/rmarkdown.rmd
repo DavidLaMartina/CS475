@@ -1,0 +1,25 @@
+---
+title: My first R Markdown document
+author: David LaMartina
+output: pdf_document
+---
+
+Stuff1
+
+stuff2
+line of stuff2
+
+* bullet1
+* bullet2
+
+# section heading
+
+## subsection
+
+###subsubsection
+
+*italics*
+
+```{r}
+(56^9) * 5
+```

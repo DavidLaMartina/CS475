@@ -63,7 +63,7 @@
 #define BOTZ23      -8.
 #define BOTZ33      -3.
 
-float Height(int iu, int iv);
+double Height(int iu, int iv);
 
 int main(int argc, char* argv[]){
 #ifndef _OPENMP
@@ -73,16 +73,16 @@ int main(int argc, char* argv[]){
     omp_set_num_threads(NUMT); 
 
     // Area of single full-sized tile
-    float fullTileArea = (  ( (XMAX - XMIN) / (float)(NUMNODES - 1) ) *
-                            ( (YMAX - YMIN) / (float)(NUMNODES - 1) )   );
+    double fullTileArea = (  ( (XMAX - XMIN) / (double)(NUMNODES - 1) ) *
+                            ( (YMAX - YMIN) / (double)(NUMNODES - 1) )   );
 
     // Find max performance out of NUMTRIES tries
-    float maxPerformance = 0;
-    float volSum         = 0;
+    double maxPerformance = 0;
+    double volSum         = 0;
     for (int tr = 0; tr < NUMTRIES; tr++){
         double time0 = omp_get_wtime();
 
-        float volume = 0;
+        double volume = 0;
         #pragma omp parallel for default(none) shared(fullTileArea) reduction(+:volume)
         for (int i = 0; i < NUMNODES*NUMNODES; i++){
             int iu = i % NUMNODES;
@@ -98,39 +98,39 @@ int main(int argc, char* argv[]){
         }
         volSum += volume;
     }
-    float averageVolume = volSum / NUMTRIES;
+    double averageVolume = volSum / NUMTRIES;
     
     printf("%d\t%d\t%.3lf\t%.3lf\n", NUMT, NUMNODES, averageVolume, maxPerformance);
 
     return 0;
 }
 
-float
+double
 Height( int iu, int iv )    // iu,iv = 0 .. NUMNODES-1
 {
-    float u = (float)iu / (float)(NUMNODES-1);
-    float v = (float)iv / (float)(NUMNODES-1);
+    double u = (double)iu / (double)(NUMNODES-1);
+    double v = (double)iv / (double)(NUMNODES-1);
 
     // Basis functions: account for corners / edges
 
-    float bu0 = (1.-u) * (1.-u) * (1.-u);
-    float bu1 = 3. * u * (1.-u) * (1.-u);
-    float bu2 = 3. * u * u * (1.-u);
-    float bu3 = u * u * u;
+    double bu0 = (1.-u) * (1.-u) * (1.-u);
+    double bu1 = 3. * u * (1.-u) * (1.-u);
+    double bu2 = 3. * u * u * (1.-u);
+    double bu3 = u * u * u;
 
-    float bv0 = (1.-v) * (1.-v) * (1.-v);
-    float bv1 = 3. * v * (1.-v) * (1.-v);
-    float bv2 = 3. * v * v * (1.-v);
-    float bv3 = v * v * v;
+    double bv0 = (1.-v) * (1.-v) * (1.-v);
+    double bv1 = 3. * v * (1.-v) * (1.-v);
+    double bv2 = 3. * v * v * (1.-v);
+    double bv3 = v * v * v;
 
     // Final height computations: 4 'partial pillars' per upper and lower 
     // height to account for zero- and non-zero values (middles, edges, corners)
-    float top =       bu0 * ( bv0*TOPZ00 + bv1*TOPZ01 + bv2*TOPZ02 + bv3*TOPZ03 )
+    double top =       bu0 * ( bv0*TOPZ00 + bv1*TOPZ01 + bv2*TOPZ02 + bv3*TOPZ03 )
                     + bu1 * ( bv0*TOPZ10 + bv1*TOPZ11 + bv2*TOPZ12 + bv3*TOPZ13 )
                     + bu2 * ( bv0*TOPZ20 + bv1*TOPZ21 + bv2*TOPZ22 + bv3*TOPZ23 )
                     + bu3 * ( bv0*TOPZ30 + bv1*TOPZ31 + bv2*TOPZ32 + bv3*TOPZ33 );
 
-    float bot =       bu0 * ( bv0*BOTZ00 + bv1*BOTZ01 + bv2*BOTZ02 + bv3*BOTZ03 )
+    double bot =       bu0 * ( bv0*BOTZ00 + bv1*BOTZ01 + bv2*BOTZ02 + bv3*BOTZ03 )
                     + bu1 * ( bv0*BOTZ10 + bv1*BOTZ11 + bv2*BOTZ12 + bv3*BOTZ13 )
                     + bu2 * ( bv0*BOTZ20 + bv1*BOTZ21 + bv2*BOTZ22 + bv3*BOTZ23 )
                     + bu3 * ( bv0*BOTZ30 + bv1*BOTZ31 + bv2*BOTZ32 + bv3*BOTZ33 );

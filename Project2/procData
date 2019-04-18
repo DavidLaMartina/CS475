@@ -1,4 +1,8 @@
 #!/usr/bin/Rscript
+library(ggplot2)
+library(reshape2)
+library(ggalt)
+library(tidyr)
 
 # Read from stdin (pipe from runProj2 output) and write to txt before mod
 data <- read.table('stdin', header=TRUE)
@@ -7,17 +11,13 @@ write.table(data, "data.txt", sep="\t", row.names=FALSE)
 data$Volume <- NULL
 
 # Organize data by both threads and nodes & output for PDF incorporation
-dataByThreads <- reshape(data, idvar = "Threads", timevar = "Nodes", direction = "wide")
-dataByNodes   <- reshape(data, idvar = "Nodes", timevar = "Threads", direction = "wide")
+dataByThreads <- spread(data, Nodes, Performance)
+dataByNodes   <- spread(data, Threads, Performance)
 
 write.table(dataByThreads, "dataByThreads.txt", sep="\t", row.names=FALSE)
 write.table(dataByNodes, "dataByNodes.txt", sep="\t", row.names=FALSE)
 
 # Plot
-library(ggplot2)
-library(reshape2)
-library(ggalt)
-
 # Melt data back into long format for ggplot
 threads_long <- melt(dataByThreads,  id="Threads")
 nodes_long   <- melt(dataByNodes, id="Nodes")
