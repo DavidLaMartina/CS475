@@ -100,7 +100,7 @@ int main(int argc, char* argv[]){
     }
     double averageVolume = volSum / NUMTRIES;
     
-    printf("%d\t%d\t%.3lf\t%.3lf\n", NUMT, NUMNODES, averageVolume, maxPerformance);
+    printf("%d\t%d\t%.3lf\t%.3lf\n", NUMT, NUMNODES*NUMNODES, averageVolume, maxPerformance);
 
     return 0;
 }
