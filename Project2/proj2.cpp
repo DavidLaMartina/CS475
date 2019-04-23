@@ -83,12 +83,21 @@ int main(int argc, char* argv[]){
         double time0 = omp_get_wtime();
 
         double volume = 0;
-        #pragma omp parallel for default(none) shared(fullTileArea) reduction(+:volume)
+        double tileFactor;
+        #pragma omp parallel for default(none) private(tileFactor),shared(fullTileArea),reduction(+:volume)
         for (int i = 0; i < NUMNODES*NUMNODES; i++){
             int iu = i % NUMNODES;
             int iv = i / NUMNODES;
 
-            volume += Height(iu, iv) * fullTileArea;
+            // Change tile factor based on center, side or corner
+            if ((iu == 0 || iu == NUMNODES - 1) && (iv == 0 || iv == NUMNODES - 1))
+                tileFactor = 0.25;
+            else if ((iu == 0 || iu == NUMNODES - 1) || (iv == 0 || iv == NUMNODES - 1))
+                tileFactor = 0.5;
+            else
+                tileFactor = 1;
+
+            volume += (Height(iu, iv) * fullTileArea * tileFactor);
         }
 
         double totalTime = omp_get_wtime() - time0;
@@ -100,7 +109,7 @@ int main(int argc, char* argv[]){
     }
     double averageVolume = volSum / NUMTRIES;
     
-    printf("%d\t%d\t%.3lf\t%.3lf\n", NUMT, NUMNODES*NUMNODES, averageVolume, maxPerformance);
+    printf("%d\t%d\t%.4lf\t%.4lf\n", NUMT, NUMNODES*NUMNODES, averageVolume, maxPerformance);
 
     return 0;
 }
@@ -110,8 +119,6 @@ Height( int iu, int iv )    // iu,iv = 0 .. NUMNODES-1
 {
     double u = (double)iu / (double)(NUMNODES-1);
     double v = (double)iv / (double)(NUMNODES-1);
-
-    // Basis functions: account for corners / edges
 
     double bu0 = (1.-u) * (1.-u) * (1.-u);
     double bu1 = 3. * u * (1.-u) * (1.-u);
@@ -123,8 +130,6 @@ Height( int iu, int iv )    // iu,iv = 0 .. NUMNODES-1
     double bv2 = 3. * v * v * (1.-v);
     double bv3 = v * v * v;
 
-    // Final height computations: 4 'partial pillars' per upper and lower 
-    // height to account for zero- and non-zero values (middles, edges, corners)
     double top =       bu0 * ( bv0*TOPZ00 + bv1*TOPZ01 + bv2*TOPZ02 + bv3*TOPZ03 )
                     + bu1 * ( bv0*TOPZ10 + bv1*TOPZ11 + bv2*TOPZ12 + bv3*TOPZ13 )
                     + bu2 * ( bv0*TOPZ20 + bv1*TOPZ21 + bv2*TOPZ22 + bv3*TOPZ23 )
