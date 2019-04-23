@@ -1,0 +1,12 @@
+#!/usr/bin/Rscript
+
+# Read from stdin
+data <- read.table('stdin', header=TRUE)
+write.table(data, "data.txt", sep="\t", row.names=FALSE)
+
+# Get rid of calculation field to show only performance vs. nodes & iterations
+dataByThreads <- spread(data, Nodes, Performance)
+dataByNodes   <- spread(data, Threads, Performance)
+
+write.table(dataByThreads, "dataByThreads.txt", sep="\t", row.names=FALSE)
+write.table(dataByNodes, "dataByNodes.txt", sep="\t", row.names=FALSE)
