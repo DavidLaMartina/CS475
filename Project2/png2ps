@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+from PIL import Image
+import sys
+
+imgFile = sys.argv[1]
+outFile = imgFile.replace('png', 'eps')
+image   = Image.open(imgFile)
+image.thumbnail((800,800))
+image.save(outFile)

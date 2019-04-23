@@ -29,9 +29,13 @@ ggplot(data=threads_long,
        labs(y='MegaHeights per Second', x='Threads', color='Nodes') +
        ggtitle('Performance vs. Threads')
 
+ggsave("threads.png")
+
 ggplot(data=nodes_long,
        aes(x=Nodes, y=value, color=variable)) +
        geom_point() +
        geom_xspline() +
        labs(y='MegaHeights per Second', x='Nodes', color='Threads') +
        ggtitle('Performance vs. Threads')
+
+ggsave("nodes.png")
