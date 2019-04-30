@@ -1,3 +1,0 @@
-key1=3
-key2=5
-key3=butt
