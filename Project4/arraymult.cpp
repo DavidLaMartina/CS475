@@ -11,7 +11,6 @@
 #endif
 
 int main(int argc, char* argv[]){
-    printf("%d\n", ARRSIZE);
 
     return 0;
 }
