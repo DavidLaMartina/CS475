@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Script for running CS475 Spr2019 Project 4, Vectorized Array Multiplication
+# and Reduction using SSE.
+# 
+# David LaMartina
+# lamartid@oregonstate.edu
+# CS475 Spr2019
+# Project due May 13, 2019
+
 # Check number of args
 if (($# < 2)); then
     printf "\trunProj4 usage: runProj4 <max arr size> <arr size increment> [mult]\n"
@@ -14,14 +22,15 @@ maxArrSize=$1
 arrSizeInc=$2
 
 # Headers - ensure same order in C++ prog!
-echo -e "Array size\tSIMD Mult\tNon-SIMD Mult\tSIMD Reduce\tNon-SIMD Reduce"
+# echo -e "Array size\tSIMD Mult\tNon-SIMD Mult\tMult Speedup\tSIMD Reduce\tNon-SIMD Reduce\tReduce Speedup"
+echo -e "Array size\tS Multiply\tS Reduce"
 
 # Start with 1,000-element array
 export ARRSIZE=1000
-make clean
-make
+make clean >/dev/null
+make >/dev/null
 ./arraymult
-make clean
+make clean >/dev/null
 
 # Now loop over increments additively or multiplicatively
 if [ "$3" == "mult" ]; then
@@ -33,9 +42,9 @@ fi
 # Loop until reaching max size
 while [ $currentSize -le $maxArrSize ]; do
     export ARRSIZE=$currentSize
-    make
+    make >/dev/null
     ./arraymult
-    make clean
+    make clean >/dev/null
 
     # Update size based on add / mult
     if [ "$3" == "mult" ]; then
