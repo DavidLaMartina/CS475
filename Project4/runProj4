@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#Check number of args
+if (($# < 2)); then
+    printf "\trunProj4 usage: runProj4 <max arr size> <arr size increment>\n"
+    exit 1;
+# Ensure reasonable max array size
+elif (($1 > 100000000)); then
+    printf "\tThe max array size should be 100 million or lower\n"
+    exit 1;
+# Ensure increment < max size
+elif (($2 > $1)); then
+    printf "\tThe array size increment can't be bigger than the max size\n"
+    exit 1
+# Ensure increment >= 1000
+elif (($2 < 1000)); then
+    printf "\tThe array size increment must be at least 1000\n"
+    exit 1
+fi
+
+maxArrSize=$1
+arrSizeInc=$2
+
+# Headers - ensure same order in C++ prog!
+echo -e "Array size\tSIMD Mult\tNon-SIMD Mult\tSIMD Reduce\tNon-SIMD Reduce"
+
+# Start with 1,000-element array
+export ARRSIZE=1000
+make clean
+make
+./arraymult
+make clean
+
+# Now loop over increments
+currentSize=$arrSizeInc
+while [ $currentSize -le $maxArrSize ]; do
+    export ARRSIZE=$currentSize
+    make
+    ./arraymult
+    make clean
+    currentSize=$(($currentSize + $arrSizeInc))
+done
+
+exit 0
