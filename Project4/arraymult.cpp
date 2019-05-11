@@ -20,20 +20,25 @@
 #define     NUMTRIES    10
 #endif
 
+// float *a = new float[ARRSIZE];
+// float *b = new float[ARRSIZE];
+// float *c = new float[ARRSIZE];
+
 int main(int argc, char* argv[]){
     // First output array size
     printf("%d\t", ARRSIZE);
 
-    // Setup: arrays and maxPerformance
-    float *a = new float[ARRSIZE];
-    float *b = new float[ARRSIZE];
-    float *c = new float[ARRSIZE];
+    // Max performance vars
     double maxPerformanceSSE;
     double maxPerformanceNonSSE;
 
     // SIMD Array Multiplication
     maxPerformanceSSE = 0;
     for (int t = 0; t < NUMTRIES; t++){
+        float *a = new float[ARRSIZE];
+        float *b = new float[ARRSIZE];
+        float *c = new float[ARRSIZE];
+
         double time0 = omp_get_wtime();
 
         SimdMul(a, b, c, ARRSIZE);
@@ -44,12 +49,19 @@ int main(int argc, char* argv[]){
         if (megaFuncPerSecond > maxPerformanceSSE){
             maxPerformanceSSE = megaFuncPerSecond;
         }
+        delete[] a;
+        delete[] b;
+        delete[] c;
     }
     // printf("%.3lf\t", maxPerformanceSSE);
 
     // Non-SIMD Array Multiplication
     maxPerformanceNonSSE = 0;
     for (int t = 0; t < NUMTRIES; t++){
+        float *a = new float[ARRSIZE];
+        float *b = new float[ARRSIZE];
+        float *c = new float[ARRSIZE];
+
         double time0 = omp_get_wtime();
 
         NonSimdMul(a, b, c, ARRSIZE);
@@ -60,6 +72,9 @@ int main(int argc, char* argv[]){
         if (megaFuncPerSecond > maxPerformanceNonSSE){
             maxPerformanceNonSSE = megaFuncPerSecond;
         }
+        delete[] a;
+        delete[] b;
+        delete[] c;
     }
     // printf("%.3lf\t", maxPerformanceNonSSE);
 
@@ -69,6 +84,10 @@ int main(int argc, char* argv[]){
     // SIMD Array Reduction
     maxPerformanceSSE = 0;
     for (int t = 0; t < NUMTRIES; t++){
+        float *a = new float[ARRSIZE];
+        float *b = new float[ARRSIZE];
+        float *c = new float[ARRSIZE];
+
         double time0 = omp_get_wtime();
 
         SimdMulSum(a, b, ARRSIZE);
@@ -79,12 +98,19 @@ int main(int argc, char* argv[]){
         if (megaFuncPerSecond > maxPerformanceSSE){
             maxPerformanceSSE = megaFuncPerSecond;
         }
+        delete[] a;
+        delete[] b;
+        delete[] c;
     }
     // printf("%.3lf\t", maxPerformanceSSE);
 
     // Non-SIMD Array Reduction
     maxPerformanceNonSSE = 0;
     for (int t = 0; t < NUMTRIES; t++){
+        float *a = new float[ARRSIZE];
+        float *b = new float[ARRSIZE];
+        float *c = new float[ARRSIZE];
+
         double time0 = omp_get_wtime();
 
         NonSimdMulSum(a, b, ARRSIZE);
@@ -95,6 +121,9 @@ int main(int argc, char* argv[]){
         if (megaFuncPerSecond > maxPerformanceNonSSE){
             maxPerformanceNonSSE = megaFuncPerSecond;
         }
+        delete[] a;
+        delete[] b;
+        delete[] c;
     }
     // printf("%.3lf\t", maxPerformanceNonSSE);
 
@@ -102,9 +131,9 @@ int main(int argc, char* argv[]){
     printf("%.3lf\n", (maxPerformanceSSE / maxPerformanceNonSSE));
     
     // Free mem & exit
-    delete[] a;
-    delete[] b;
-    delete[] c;
+    // delete[] a;
+    // delete[] b;
+    // delete[] c;
     
     return 0;
 }

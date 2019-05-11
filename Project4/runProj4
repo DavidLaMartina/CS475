@@ -28,7 +28,7 @@ echo -e "Array size\tS Multiply\tS Reduce"
 # Start with 1,000-element array
 export ARRSIZE=1000
 make clean >/dev/null
-make >/dev/null
+make #>/dev/null
 ./arraymult
 make clean >/dev/null
 
