@@ -1,0 +1,239 @@
+#include <stdio.h>
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <omp.h>
+
+#include "CL/cl.h"
+#include "CL/cl_platform.h"
+
+// Variables from run to run: number of elements, local size, and file (mult vs mult+add)
+#ifndef NUM_ELEMENTS
+#define NUM_ELEMENTS    1024*1024*64
+#endif
+
+#ifndef LOCAL_SIZE
+#define LOCAL_SIZE      64
+#endif
+
+#ifndef CL_FILE
+#define CL_FILE         "mult.cl"
+#endif
+
+#define NUM_WORK_GROUPS NUM_ELEMENTS/LOCAL_SIZE
+
+const char*             CL_FILE_NAME = { CL_FILE };
+const float             TOL          = 0.0001f;
+
+void                    Wait( cl_command_queue );
+int                     LookAtTheBits( float );
+
+int
+main( int argc, char *argv[] )
+{
+    // Try to open the openCL kernel program
+    FILE* fp;
+    fp = fopen( CL_FILE_NAME, "r" );
+    if (fp == NULL){
+        fprintf( stderr, "Cannot open OpenCL source file '%s'\n", CL_FILE_NAME );
+        return 1;
+    }
+
+    cl_int status;          // return status from openCL calls; test against CL_SUCCESS
+
+    // Get the platform id:
+    cl_platform_id platform;
+    status = clGetPlatformIDs( 1, &platform, NULL );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clGetDeviceIDs failed (2)\n" );
+
+    // Get device id:
+    cl_device_id device;
+    status = clGetDeviceIDs( platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clGetDeviceIDs failed (2)\n" );
+
+    // Allocate host memory buffers
+    float *hA = new float[ NUM_ELEMENTS ];
+    float *hB = new float[ NUM_ELEMENTS ];
+    float *hC = new float[ NUM_ELEMENTS ];
+    float *hD = new float[ NUM_ELEMENTS ];
+
+    // Fill host memory buffers
+    for (int i = 0; i < NUM_ELEMENTS; i++){
+        hA[i] = hB[i] = hC[i] = (float)sqrt( (double)i );
+    }
+
+    size_t dataSize = NUM_ELEMENTS * sizeof(float);
+
+    // Create openCL context:
+    cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &status);
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateContext failed\n");
+
+    // Create openCL command queue:
+    cl_command_queue cmdQueue = clCreateCommandQueue( context, device, 0, &status );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateCommandQueue failed\n");
+
+    // Allocate device mem buffers
+    cl_mem dA = clCreateBuffer( context, CL_MEM_READ_ONLY, dataSize, NULL, &status );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateBuffer failed (1)\n");
+
+    cl_mem dB = clCreateBuffer( context, CL_MEM_READ_ONLY, dataSize, NULL, &status );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateBuffer failed (2)\n");
+
+    cl_mem dC = clCreateBuffer( context, CL_MEM_READ_ONLY, dataSize, NULL, &status );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateBuffer failed (3)\n");
+
+    cl_mem dD = clCreateBuffer( context, CL_MEM_WRITE_ONLY, dataSize, NULL, &status );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clCreateBuffer failed (4)\n");
+
+    // Enqueue the commands to write data from host buffers into device buffers:
+    status = clEnqueueWriteBuffer( cmdQueue, dA, CL_FALSE, 0, dataSize, hA, 0, NULL, NULL);
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clEnqueueWriteBuffer failed (1)\n");
+
+    status = clEnqueueWriteBuffer( cmdQueue, dB, CL_FALSE, 0, dataSize, hB, 0, NULL, NULL);
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clEnqueueWriteBuffer failed (2)\n");
+
+    status = clEnqueueWriteBuffer( cmdQueue, dC, CL_FALSE, 0, dataSize, hC, 0, NULL, NULL);
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clEnqueueWriteBuffer failed (3)\n");
+
+//     status = clEnqueueWriteBuffer( cmdQueue, dD, CL_FALSE, 0, dataSize, hD, 0, NULL, NULL);
+//     if (status != CL_SUCCESS)
+//         fprintf(stderr, "clEnqueueWriteBuffer failed (4)\n");
+
+    Wait( cmdQueue );
+
+    // Read kernel code from file
+    fseek( fp, 0, SEEK_END );
+    size_t fileSize = ftell( fp );
+    fseek( fp, 0, SEEK_SET );
+    char *clProgramText = new char[ fileSize+1 ];
+    size_t n = fread( clProgramText, 1, fileSize, fp );
+    clProgramText[fileSize] = '\0';
+    fclose( fp );
+    if( n != fileSize )
+        fprintf( stderr, "Expected to read %d bytes from '%s' -- actually read %d.\n", fileSize, CL_FILE_NAME, n);
+
+    // Create text for kernel program
+    char* strings[1];
+    strings[0] = clProgramText;
+    cl_program program = clCreateProgramWithSource( context, 1, (const char**)strings, NULL, &status);
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clCreateProgramWithSource failed\n");
+    delete[] clProgramText;
+
+    // Compile and link kernel code
+    char *options = { "" };
+    status = clBuildProgram( program, 1, &device, options, NULL, NULL );
+    if (status != CL_SUCCESS)
+    {
+        size_t size;
+        clGetProgramBuildInfo( program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &size );
+        cl_char *log = new cl_char[ size ];
+        clGetProgramBuildInfo( program, device, CL_PROGRAM_BUILD_LOG, size, log, NULL );
+        fprintf(stderr, "clBuildProgram failed:\n%s\n", log);
+        delete[] log;
+    }
+
+    // Create kernel object
+    cl_kernel kernel = clCreateKernel( program, "ArrayMult", &status );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clCreateKernel failed\n" );
+
+    // Set up arguments to kernel object
+    status = clSetKernelArg( kernel, 0, sizeof(cl_mem), &dA );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clSetKernelArg failed (1)\n");
+
+    status = clSetKernelArg( kernel, 1, sizeof(cl_mem), &dB );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clSetKernelArg failed (2)\n");
+
+    status = clSetKernelArg( kernel, 2, sizeof(cl_mem), &dC );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clSetKernelArg failed (3)\n");
+
+    status = clSetKernelArg( kernel, 3, sizeof(cl_mem), &dD );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clSetKernelArg failed (4)\n");
+
+    // Enqueue kernel object for execution
+    size_t globalWorkSize[3] = { NUM_ELEMENTS, 1, 1 };
+    size_t localWorkSize[3]  = { LOCAL_SIZE,   1, 1 };
+
+    Wait( cmdQueue );
+    double time0 = omp_get_wtime();
+
+    time0 = omp_get_wtime();
+
+    status = clEnqueueNDRangeKernel( cmdQueue, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL );
+    if (status != CL_SUCCESS)
+        fprintf(stderr, "clEnqueueNDRangeKernel failed: %d\n", status);
+
+    Wait( cmdQueue );
+    double time1 = omp_get_wtime();
+
+    // Read results buffer back from device to host
+    status = clEnqueueReadBuffer( cmdQueue, dD, CL_TRUE, 0, dataSize, hD, 0, NULL, NULL );
+    if (status != CL_SUCCESS)
+        fprintf( stderr, "clEnqueueReadBuffer failed\n" );
+
+    // Did it work?
+    for (int i = 0; i < NUM_ELEMENTS; i++)
+    {
+        float expected = hA[i] * hB[i];
+        if ( fabs(hC[i] - expected ) > TOL )
+        {}
+    }
+    //printf( "%d\t%4d\t%10d\t%10.3lf GigaMultsPerSecond\n",
+     //       NUM_ELEMENTS, LOCAL_SIZE, NUM_WORK_GROUPS, (double)NUM_ELEMENTS/(time1-time0)/1000000000. );
+    printf("%.3lf", (double)NUM_ELEMENTS/(time1-time0)/1000000000. );
+
+    // Clean everything up
+    clReleaseKernel(        kernel  );
+    clReleaseProgram(       program );
+    clReleaseCommandQueue(  cmdQueue);
+    clReleaseMemObject(     dA      );
+    clReleaseMemObject(     dB      );
+    clReleaseMemObject(     dC      );
+    clReleaseMemObject(     dD      );
+
+    delete[] hA;
+    delete[] hB;
+    delete[] hC;
+    delete[] hD;
+
+    return 0;
+}
+
+int
+LookAtTheBits( float fp )
+{
+    int *ip = (int*)&fp;
+    return *ip;
+}
+
+void
+Wait( cl_command_queue queue )
+{
+    cl_event wait;
+    cl_int   status;
+
+    status = clEnqueueMarker( queue, &wait );
+    if( status != CL_SUCCESS )
+        fprintf( stderr, "Wait: clEnqueueMarker failed\n" );
+
+    status = clWaitForEvents( 1, &wait );
+    if( status != CL_SUCCESS )
+        fprintf( stderr, "Wait: clWaitForEvents failed\n" );
+}

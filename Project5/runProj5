@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# David LaMartina
+# lamartid@oregonstate.edu
+# Project 5: OpenCL Array Operations
+# CS475 Spr2019
+# Due May 26, 2019
+
+# This script performs multiple compilations and runs of the two programs
+#   required for array multiplication, multiply-add, and reduction.
+
+# Require specificiation of max "megabytes" (1024 * 1024 * n array elements)
+if (($# < 2)); then
+    printf "\trunProj5 <max MB> <MB increment>\n"
+    exit 1;
+fi
+
+maxMB=$1
+MBincrement=$2
+
+# Same function, diff files
+function runTests(){
+    echo -e "Elements\t8\t16\t32\t64\t128\t256\t512\t1024"
+
+    echo -e -n "1024\t"
+    export NUM_ELEMENTS=1024
+    for localSize in 8 16 32 64 128 256 512 1024; do
+        export LOCAL_SIZE=$localSize
+
+        make >/dev/null 2>&1
+        ./arrayMult # | cut -f 4
+        echo -n -e "\t"
+        make clean >/dev/null
+    done
+    echo -e ""
+    
+    currentMB=1
+    while (($currentMB <= $maxMB)); do
+        echo -n -e "$(($currentMB * 1024 * 1024))\t"
+        for localSize in 8 16 32 64 128 256 512 1024; do
+            export NUM_ELEMENTS=$((1024*1024*$currentMB))
+            export LOCAL_SIZE=$localSize
+
+            make >/dev/null 2>&1
+            ./arrayMult # | cut -f 4
+            echo -n -e "\t"
+            make clean >/dev/null
+        done
+        if (($currentMB == 1 && $MBincrement != 1)); then
+            currentMB=$MBincrement
+        elif (($currentMB == 1 && $MBincrement == 1)); then
+            currentMB=$(($maxMB + 1))
+        else
+            currentMB=$(($currentMB + $MBincrement))
+        fi
+        echo -e ""
+    done    
+}
+
+# Run actual tests
+export CL_FILE="\"mult.cl\""
+echo -e "Running test for array multiply..."
+runTests
+echo -e ""
+
+export CL_FILE="\"multAdd.cl\""
+echo -e "Running tests for array multiply + add..."
+runTests
+echo -e ""
+
+exit 0;
