@@ -12,7 +12,8 @@ all: proj7OMP proj7SIMD proj7GPU
 proj7OMP: proj7OMP.cpp
 	$(CC) $(CFLAGS) -o proj7OMP -DNUMT=${NUMT} proj7OMP.cpp -fopenmp
 
-proj7SIMD:
+proj7SIMD: proj7SIMD.cpp
+	$(CC) $(CFLAGS) -o proj7SIMD proj7SIMD.cpp simd.p4.cpp -fopenmp
 
 proj7GPU:
 
