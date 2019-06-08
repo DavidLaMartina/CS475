@@ -186,7 +186,7 @@ int main( int argc, char* argv[] )
         fprintf( stderr, "clEnqueueReadBuffer failed\n" );
 
     double performance = (double)Size / (time1 - time0) / 1000000.;
-    printf( "Performance: %.3lf MegaFunc per second\n", performance );
+    printf( "%.3lf MegaFunc per second\n", performance );
 
     writeData();
 

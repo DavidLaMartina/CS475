@@ -72,7 +72,7 @@ int main( int argc, char* argv[] )
 
     double time1 = omp_get_wtime();
     double megaFuncPerSecond = (double)Size / ( time1 - time0 ) / 1000000.;
-    printf( "Performance: %f megaFunctions per second\n", megaFuncPerSecond );
+    printf( "%f megaFunctions per second\n", megaFuncPerSecond );
 
     writeData();
     free( Array );

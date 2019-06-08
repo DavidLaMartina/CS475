@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# David LaMartina
+# lamartid@oregonstate.edu
+# Project 7A: Autocorrelation using OpenMP, SIMD, and OpenCL
+# CS475 Spr2019
+# Due June 10, 2019
+
+echo -ne "OMP, 1 thread:\t"
+export NUMT=1
+make proj7OMP > /dev/null 2>&1
+./proj7OMP
+echo
+
+echo -ne "OMP, 16 threads:\t"
+export NUMT=16
+make clean > /dev/null 2>&1
+make proj7OMP > /dev/null 2>&1
+./proj7OMP
+echo
+
+echo -ne "SIMD:\t"
+make proj7SIMD > /dev/null 2>&1
+./proj7SIMD
+echo
+
+echo -ne "GPU:\t"
+make proj7GPU > /dev/null 2>&1
+./proj7GPU
+echo
+
+make clean > /dev/null 2>&1

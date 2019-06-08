@@ -11,6 +11,10 @@
 #include <time.h>
 #include <omp.h>
 
+#ifndef NUMTRIES
+#define NUMTRIES    10
+#endif
+
 #ifndef NUMT
 #define NUMT        1
 #endif
@@ -68,29 +72,37 @@ int main( int argc, char* argv[] )
     return 1;
 #endif
 
-    readData();
-    omp_set_num_threads( NUMT );
+    double maxPeformance = 0;
 
-    double time0 = omp_get_wtime();
-
-    #pragma omp parallel for default(none) shared(Size, Array, Sums)
-    for( int shift = 0; shift < Size; shift++ )
+    for( int i = 0; i < NUMTRIES; i++ )
     {
-        float sum = 0;
-        for( int i = 0; i < Size; i++ )
+        readData();
+        omp_set_num_threads( NUMT );
+
+        double time0 = omp_get_wtime();
+
+        #pragma omp parallel for default(none) shared(Size, Array, Sums)
+        for( int shift = 0; shift < Size; shift++ )
         {
-            sum += Array[i] * Array[ i + shift ];
+            float sum = 0;
+            for( int i = 0; i < Size; i++ )
+            {
+                sum += Array[i] * Array[ i + shift ];
+            }
+            Sums[ shift ] = sum;
         }
-        Sums[ shift ] = sum;
+
+        double time1 = omp_get_wtime();
+        double megaFuncPerSecond = (double)Size / ( time1 - time0 ) / 1000000.;
+        if( megaFuncPerSecond > maxPeformance ){
+            maxPeformance = megaFuncPerSecond;
+        }
+
+        writeData();
+        free( Array );
+        free( Sums  );
     }
-
-    double time1 = omp_get_wtime();
-    double megaFuncPerSecond = (double)Size / ( time1 - time0 ) / 1000000.;
-    printf( "Performance: %f megaFunctions per second\n", megaFuncPerSecond );
-
-    writeData();
-    free( Array );
-    free( Sums  );
-
+    printf( "%f megaFunctions per second\n", maxPeformance );
+    
     return 0;
 }
